@@ -1,0 +1,421 @@
+import { useState, useRef, useEffect, useMemo } from "react";
+
+const SCHOOL_DATABASE = [
+  { name: "MIT", location: "Cambridge, MA", region: "Northeast", type: "Private", size: "Small", acceptance: 4, sat: "1550-1580", tuition: 59750, ranking: 2, strengths: ["Engineering", "Computer Science", "Mathematics", "Physics", "AI/ML"], vibe: "Intense & innovative", setting: "Urban", mascot: "Engineers", enrollment: 4600, finAid: 100 },
+  { name: "Stanford University", location: "Stanford, CA", region: "West", type: "Private", size: "Medium", acceptance: 4, sat: "1540-1570", tuition: 62484, ranking: 3, strengths: ["Computer Science", "Engineering", "Business", "Biology", "Economics"], vibe: "Entrepreneurial & sunny", setting: "Suburban", mascot: "Cardinal", enrollment: 8100, finAid: 100 },
+  { name: "Harvard University", location: "Cambridge, MA", region: "Northeast", type: "Private", size: "Medium", acceptance: 3, sat: "1540-1580", tuition: 59076, ranking: 1, strengths: ["Law", "Business", "Medicine", "Political Science", "Economics"], vibe: "Prestigious & traditional", setting: "Urban", mascot: "Crimson", enrollment: 7100, finAid: 100 },
+  { name: "Yale University", location: "New Haven, CT", region: "Northeast", type: "Private", size: "Medium", acceptance: 5, sat: "1530-1570", tuition: 64700, ranking: 5, strengths: ["Law", "Drama", "Political Science", "English", "History"], vibe: "Artistic & intellectual", setting: "Urban", mascot: "Bulldogs", enrollment: 6500, finAid: 100 },
+  { name: "Princeton University", location: "Princeton, NJ", region: "Northeast", type: "Private", size: "Small", acceptance: 4, sat: "1540-1570", tuition: 62400, ranking: 4, strengths: ["Mathematics", "Physics", "Public Policy", "Economics", "Philosophy"], vibe: "Scholarly & bucolic", setting: "Suburban", mascot: "Tigers", enrollment: 5500, finAid: 100 },
+  { name: "Caltech", location: "Pasadena, CA", region: "West", type: "Private", size: "Small", acceptance: 3, sat: "1560-1580", tuition: 63402, ranking: 6, strengths: ["Physics", "Engineering", "Chemistry", "Mathematics", "Astronomy"], vibe: "Small & nerdy", setting: "Suburban", mascot: "Beavers", enrollment: 900, finAid: 99 },
+  { name: "UC Berkeley", location: "Berkeley, CA", region: "West", type: "Public", size: "Large", acceptance: 11, sat: "1400-1530", tuition: 14700, ranking: 15, strengths: ["Computer Science", "Engineering", "Business", "Chemistry", "Biology"], vibe: "Activist & ambitious", setting: "Urban", mascot: "Golden Bears", enrollment: 32800, finAid: 67 },
+  { name: "UCLA", location: "Los Angeles, CA", region: "West", type: "Public", size: "Large", acceptance: 9, sat: "1390-1520", tuition: 13800, ranking: 13, strengths: ["Film", "Psychology", "Biology", "Political Science", "Economics"], vibe: "Spirited & diverse", setting: "Urban", mascot: "Bruins", enrollment: 32400, finAid: 65 },
+  { name: "University of Michigan", location: "Ann Arbor, MI", region: "Midwest", type: "Public", size: "Large", acceptance: 18, sat: "1380-1520", tuition: 17786, ranking: 21, strengths: ["Business", "Engineering", "Psychology", "Political Science", "Nursing"], vibe: "Big Ten pride", setting: "Urban", mascot: "Wolverines", enrollment: 33200, finAid: 72 },
+  { name: "Georgia Tech", location: "Atlanta, GA", region: "South", type: "Public", size: "Large", acceptance: 17, sat: "1420-1540", tuition: 12852, ranking: 33, strengths: ["Engineering", "Computer Science", "Business", "Industrial Design", "Cybersecurity"], vibe: "Tech-focused & driven", setting: "Urban", mascot: "Yellow Jackets", enrollment: 18500, finAid: 60 },
+  { name: "Carnegie Mellon", location: "Pittsburgh, PA", region: "Northeast", type: "Private", size: "Medium", acceptance: 11, sat: "1510-1560", tuition: 63829, ranking: 24, strengths: ["Computer Science", "Engineering", "Drama", "Robotics", "Business"], vibe: "Creative tech hub", setting: "Urban", mascot: "Tartans", enrollment: 7300, finAid: 95 },
+  { name: "NYU", location: "New York, NY", region: "Northeast", type: "Private", size: "Large", acceptance: 12, sat: "1480-1560", tuition: 60438, ranking: 35, strengths: ["Business", "Film", "Performing Arts", "Law", "Journalism"], vibe: "Urban & cosmopolitan", setting: "Urban", mascot: "Violets", enrollment: 29000, finAid: 55 },
+  { name: "Duke University", location: "Durham, NC", region: "South", type: "Private", size: "Medium", acceptance: 6, sat: "1520-1570", tuition: 66325, ranking: 7, strengths: ["Medicine", "Public Policy", "Engineering", "Business", "Biology"], vibe: "Southern & spirited", setting: "Suburban", mascot: "Blue Devils", enrollment: 6700, finAid: 100 },
+  { name: "Northwestern University", location: "Evanston, IL", region: "Midwest", type: "Private", size: "Medium", acceptance: 7, sat: "1510-1560", tuition: 65997, ranking: 9, strengths: ["Journalism", "Theater", "Engineering", "Economics", "Music"], vibe: "Balanced & lakeside", setting: "Suburban", mascot: "Wildcats", enrollment: 8600, finAid: 100 },
+  { name: "Rice University", location: "Houston, TX", region: "South", type: "Private", size: "Small", acceptance: 8, sat: "1510-1560", tuition: 58128, ranking: 14, strengths: ["Engineering", "Architecture", "Business", "Sciences", "Music"], vibe: "Tight-knit & warm", setting: "Urban", mascot: "Owls", enrollment: 4200, finAid: 100 },
+  { name: "Vanderbilt University", location: "Nashville, TN", region: "South", type: "Private", size: "Medium", acceptance: 6, sat: "1510-1560", tuition: 63946, ranking: 12, strengths: ["Education", "Medicine", "Music", "Political Science", "Economics"], vibe: "Southern charm & ambition", setting: "Urban", mascot: "Commodores", enrollment: 7100, finAid: 100 },
+  { name: "University of Virginia", location: "Charlottesville, VA", region: "South", type: "Public", size: "Large", acceptance: 19, sat: "1380-1520", tuition: 21006, ranking: 24, strengths: ["Business", "Law", "Government", "English", "History"], vibe: "Historic & preppy", setting: "Suburban", mascot: "Cavaliers", enrollment: 17400, finAid: 68 },
+  { name: "UNC Chapel Hill", location: "Chapel Hill, NC", region: "South", type: "Public", size: "Large", acceptance: 17, sat: "1370-1510", tuition: 9400, ranking: 22, strengths: ["Journalism", "Business", "Biology", "Public Health", "Pharmacy"], vibe: "Carolina blue & friendly", setting: "Suburban", mascot: "Tar Heels", enrollment: 20100, finAid: 65 },
+  { name: "University of Florida", location: "Gainesville, FL", region: "South", type: "Public", size: "Large", acceptance: 23, sat: "1340-1490", tuition: 6380, ranking: 28, strengths: ["Business", "Engineering", "Agriculture", "Health Sciences", "Journalism"], vibe: "Gator nation spirit", setting: "Suburban", mascot: "Gators", enrollment: 35200, finAid: 58 },
+  { name: "Boston University", location: "Boston, MA", region: "Northeast", type: "Private", size: "Large", acceptance: 14, sat: "1430-1530", tuition: 65168, ranking: 41, strengths: ["Communications", "Business", "Engineering", "International Relations", "Biology"], vibe: "City campus energy", setting: "Urban", mascot: "Terriers", enrollment: 18500, finAid: 60 },
+  { name: "Purdue University", location: "West Lafayette, IN", region: "Midwest", type: "Public", size: "Large", acceptance: 53, sat: "1250-1440", tuition: 9992, ranking: 43, strengths: ["Engineering", "Computer Science", "Agriculture", "Aviation", "Pharmacy"], vibe: "Boilermaker proud", setting: "Suburban", mascot: "Boilermakers", enrollment: 37700, finAid: 55 },
+  { name: "University of Wisconsin", location: "Madison, WI", region: "Midwest", type: "Public", size: "Large", acceptance: 49, sat: "1300-1460", tuition: 11205, ranking: 37, strengths: ["Business", "Engineering", "Biology", "Communications", "Political Science"], vibe: "Spirited & lakeside", setting: "Urban", mascot: "Badgers", enrollment: 35500, finAid: 52 },
+  { name: "Arizona State University", location: "Tempe, AZ", region: "West", type: "Public", size: "Large", acceptance: 88, sat: "1120-1360", tuition: 12467, ranking: 105, strengths: ["Business", "Engineering", "Sustainability", "Journalism", "Innovation"], vibe: "Massive & sunny", setting: "Urban", mascot: "Sun Devils", enrollment: 65500, finAid: 45 },
+  { name: "Penn State", location: "State College, PA", region: "Northeast", type: "Public", size: "Large", acceptance: 55, sat: "1210-1390", tuition: 19840, ranking: 60, strengths: ["Engineering", "Business", "Communications", "Agriculture", "Education"], vibe: "We Are!", setting: "Rural", mascot: "Nittany Lions", enrollment: 40800, finAid: 50 },
+  { name: "UT Austin", location: "Austin, TX", region: "South", type: "Public", size: "Large", acceptance: 31, sat: "1300-1490", tuition: 11658, ranking: 32, strengths: ["Business", "Engineering", "Computer Science", "Communications", "Film"], vibe: "Hook 'em & keep it weird", setting: "Urban", mascot: "Longhorns", enrollment: 40800, finAid: 55 },
+  { name: "Emory University", location: "Atlanta, GA", region: "South", type: "Private", size: "Medium", acceptance: 11, sat: "1470-1540", tuition: 60774, ranking: 24, strengths: ["Business", "Pre-Med", "Nursing", "Political Science", "Psychology"], vibe: "Southern intellectual", setting: "Suburban", mascot: "Eagles", enrollment: 7100, finAid: 100 },
+  { name: "USC", location: "Los Angeles, CA", region: "West", type: "Private", size: "Large", acceptance: 12, sat: "1470-1550", tuition: 67612, ranking: 28, strengths: ["Film", "Business", "Engineering", "Communications", "Music"], vibe: "Trojan family & Hollywood", setting: "Urban", mascot: "Trojans", enrollment: 21000, finAid: 70 },
+  { name: "Tufts University", location: "Medford, MA", region: "Northeast", type: "Private", size: "Small", acceptance: 10, sat: "1470-1550", tuition: 67844, ranking: 30, strengths: ["International Relations", "Engineering", "Biology", "Political Science", "Child Development"], vibe: "Global-minded & quirky", setting: "Suburban", mascot: "Jumbos", enrollment: 6700, finAid: 100 },
+  { name: "UW Seattle", location: "Seattle, WA", region: "West", type: "Public", size: "Large", acceptance: 48, sat: "1280-1470", tuition: 12643, ranking: 40, strengths: ["Computer Science", "Medicine", "Engineering", "Biology", "Oceanography"], vibe: "Rainy & research-driven", setting: "Urban", mascot: "Huskies", enrollment: 36800, finAid: 52 },
+  { name: "Oberlin College", location: "Oberlin, OH", region: "Midwest", type: "Private", size: "Small", acceptance: 36, sat: "1330-1490", tuition: 65124, ranking: 45, strengths: ["Music", "Environmental Studies", "English", "Political Science", "Arts"], vibe: "Progressive & artistic", setting: "Rural", mascot: "Yeomen", enrollment: 2800, finAid: 95 },
+];
+
+const REGIONS = ["Northeast", "South", "Midwest", "West"];
+const SETTINGS = ["Urban", "Suburban", "Rural"];
+const SIZES = ["Small", "Medium", "Large"];
+const TYPES = ["Public", "Private"];
+const TOP_INTERESTS = ["Computer Science", "Engineering", "Business", "Biology", "Pre-Med", "Psychology", "Economics", "Political Science", "Film", "Music", "English", "Mathematics", "Law", "Journalism", "Arts"];
+
+const TASK_TEMPLATES = [
+  { label: "Research school & programs", offset: -60, category: "research" },
+  { label: "Request transcript", offset: -50, category: "documents" },
+  { label: "Request letters of recommendation", offset: -45, category: "documents" },
+  { label: "Draft personal statement", offset: -40, category: "essays" },
+  { label: "Write supplemental essays", offset: -30, category: "essays" },
+  { label: "Revise essays (round 1)", offset: -20, category: "essays" },
+  { label: "Finalize essays", offset: -14, category: "essays" },
+  { label: "Complete application form", offset: -10, category: "application" },
+  { label: "Submit FAFSA / financial aid", offset: -7, category: "financial" },
+  { label: "Final review & submit", offset: -3, category: "application" },
+];
+
+const CATEGORY_COLORS = { research: { bg: "#EFF6FF", text: "#1E40AF" }, documents: { bg: "#FFF7ED", text: "#9A3412" }, essays: { bg: "#F0FDF4", text: "#166534" }, application: { bg: "#FAF5FF", text: "#6B21A8" }, financial: { bg: "#FFF1F2", text: "#9F1239" } };
+const TYPE_COLORS = { Reach: { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" }, Target: { bg: "#FEF9C3", text: "#854D0E", border: "#FEF08A" }, Safety: { bg: "#DCFCE7", text: "#166534", border: "#BBF7D0" } };
+
+function generateTasks(school) {
+  const dl = new Date(school.deadline);
+  return TASK_TEMPLATES.map((t, i) => { const due = new Date(dl); due.setDate(due.getDate() + t.offset); return { id: `${school.name}-${i}-${Date.now()}`, school: school.name, label: t.label, category: t.category, due: due.toISOString().split("T")[0], done: false }; });
+}
+function formatDate(d) { return new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+function daysUntil(d) { const now = new Date(); now.setHours(0,0,0,0); return Math.ceil((new Date(d + "T00:00:00") - now) / 864e5); }
+function classifySchool(acc) { if (acc <= 10) return "Reach"; if (acc <= 30) return "Target"; return "Safety"; }
+
+export default function App() {
+  const [schools, setSchools] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [view, setView] = useState("dashboard");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState([{ role: "assistant", content: "Hey! I'm your admissions coach. I can help with essay strategy, school selection, timeline questions, or anything else. What's on your mind?" }]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [addForm, setAddForm] = useState({ name: "", type: "Target", deadline: "", earlyDeadline: "", location: "", major: "" });
+  const [filter, setFilter] = useState("all");
+  const [searchQ, setSearchQ] = useState("");
+  const [filterRegion, setFilterRegion] = useState([]);
+  const [filterType, setFilterType] = useState([]);
+  const [filterSize, setFilterSize] = useState([]);
+  const [filterSetting, setFilterSetting] = useState([]);
+  const [filterInterest, setFilterInterest] = useState([]);
+  const [sortBy, setSortBy] = useState("ranking");
+  const [expandedSchool, setExpandedSchool] = useState(null);
+  const [savedSchools, setSavedSchools] = useState([]);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const addSchool = (school) => { if (schools.find(s => s.name === school.name)) return; const ns = { ...school, id: Date.now(), status: "Not Started" }; setSchools(p => [...p, ns]); setTasks(p => [...p, ...generateTasks(ns)]); };
+  const removeSchool = (name) => { setSchools(p => p.filter(s => s.name !== name)); setTasks(p => p.filter(t => t.school !== name)); };
+  const toggleTask = (id) => setTasks(p => p.map(t => t.id === id ? { ...t, done: !t.done } : t));
+  const updateStatus = (name, st) => setSchools(p => p.map(s => s.name === name ? { ...s, status: st } : s));
+  const toggleSaved = (name) => setSavedSchools(p => p.includes(name) ? p.filter(n => n !== name) : [...p, name]);
+
+  const upcomingTasks = [...tasks].filter(t => !t.done).sort((a, b) => new Date(a.due) - new Date(b.due)).slice(0, 8);
+  const overdueTasks = tasks.filter(t => !t.done && daysUntil(t.due) < 0);
+  const completedCount = tasks.filter(t => t.done).length;
+  const progress = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+  const exploredSchools = useMemo(() => {
+    let list = SCHOOL_DATABASE.filter(s => {
+      if (showSavedOnly && !savedSchools.includes(s.name)) return false;
+      if (searchQ && !s.name.toLowerCase().includes(searchQ.toLowerCase()) && !s.location.toLowerCase().includes(searchQ.toLowerCase()) && !s.strengths.some(st => st.toLowerCase().includes(searchQ.toLowerCase()))) return false;
+      if (filterRegion.length && !filterRegion.includes(s.region)) return false;
+      if (filterType.length && !filterType.includes(s.type)) return false;
+      if (filterSize.length && !filterSize.includes(s.size)) return false;
+      if (filterSetting.length && !filterSetting.includes(s.setting)) return false;
+      if (filterInterest.length && !filterInterest.some(fi => s.strengths.includes(fi))) return false;
+      return true;
+    });
+    if (sortBy === "ranking") list.sort((a, b) => a.ranking - b.ranking);
+    else if (sortBy === "acceptance") list.sort((a, b) => b.acceptance - a.acceptance);
+    else if (sortBy === "tuition_low") list.sort((a, b) => a.tuition - b.tuition);
+    else if (sortBy === "name") list.sort((a, b) => a.name.localeCompare(b.name));
+    return list;
+  }, [searchQ, filterRegion, filterType, filterSize, filterSetting, filterInterest, sortBy, showSavedOnly, savedSchools]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg = input.trim(); setInput("");
+    const nm = [...messages, { role: "user", content: userMsg }]; setMessages(nm); setLoading(true);
+    try {
+      const sp = `You are a warm, knowledgeable college admissions coach helping a high school student. Their school list: ${JSON.stringify(schools.map(s => ({ name: s.name, type: s.type, deadline: s.deadline, status: s.status })))}. Saved/bookmarked: ${savedSchools.join(", ") || "None"}. Tasks: ${tasks.length} total, ${completedCount} done (${progress}%), ${overdueTasks.length} overdue. Today: ${new Date().toISOString().split("T")[0]}. Keep responses 2-5 sentences. Be encouraging but honest. You can suggest schools from: ${SCHOOL_DATABASE.map(s => s.name).join(", ")}.`;
+      const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: sp, messages: nm.map(m => ({ role: m.role, content: m.content })) }) });
+      const data = await res.json();
+      setMessages(p => [...p, { role: "assistant", content: data.content?.map(b => b.text || "").filter(Boolean).join("\n") || "Sorry, try again!" }]);
+    } catch { setMessages(p => [...p, { role: "assistant", content: "Had trouble connecting. Try again!" }]); }
+    setLoading(false);
+  };
+
+  const f = "'Libre Franklin','Helvetica Neue',sans-serif", d = "'Playfair Display',Georgia,serif";
+  const navy = "#0F172A", slate = "#334155", muted = "#94A3B8", surface = "#F8FAFC", card = "#FFF", accent = "#2563EB", gold = "#D97706", bdr = "#E2E8F0";
+
+  const filteredTasks = filter === "all" ? tasks : tasks.filter(t => { if (filter === "overdue") return !t.done && daysUntil(t.due) < 0; if (filter === "upcoming") return !t.done && daysUntil(t.due) >= 0 && daysUntil(t.due) <= 14; if (filter === "done") return t.done; return t.category === filter; });
+
+  const Chip = ({ items, selected, setSelected }) => (
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+      {items.map(item => { const sel = selected.includes(item); return (
+        <button key={item} onClick={() => setSelected(p => sel ? p.filter(x => x !== item) : [...p, item])} style={{ padding: "4px 13px", borderRadius: 20, fontSize: 12, fontFamily: f, fontWeight: sel ? 600 : 400, background: sel ? "#DBEAFE" : surface, color: sel ? accent : slate, border: `1px solid ${sel ? "#93C5FD" : bdr}`, cursor: "pointer", transition: "all .15s" }}>{item}</button>
+      ); })}
+    </div>
+  );
+
+  return (
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+        @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+        *{box-sizing:border-box;margin:0;padding:0}
+        .hov{transition:all .2s;cursor:pointer}.hov:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,23,42,.08)!important}
+        .nb{transition:all .2s;cursor:pointer;border:none;background:none}.nb:hover{background:rgba(37,99,235,.08)!important}
+        .inp:focus{outline:none;border-color:${accent}!important;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+        .td{animation:pulse 1.2s ease infinite}
+        ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:3px}
+      `}</style>
+
+      <div style={{ minHeight: "100vh", background: `linear-gradient(180deg,#F1F5F9,${surface})`, fontFamily: f, color: navy }}>
+        {/* Nav */}
+        <div style={{ background: card, borderBottom: `1px solid ${bdr}`, position: "sticky", top: 0, zIndex: 50 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 58 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 22 }}>🎓</span><span style={{ fontFamily: d, fontSize: 19, fontWeight: 700 }}>AdmitPlan</span></div>
+            <div style={{ display: "flex", gap: 2 }}>
+              {[["dashboard","Dashboard","📊"],["explore","Explore","🔍"],["schools","My Schools","🏫"],["tasks","Tasks","✅"]].map(([id,label,icon]) => (
+                <button key={id} className="nb" onClick={() => setView(id)} style={{ padding: "7px 13px", borderRadius: 8, fontSize: 13, fontWeight: view === id ? 600 : 400, color: view === id ? accent : slate, background: view === id ? "rgba(37,99,235,.08)" : "transparent" }}>{icon} {label}</button>
+              ))}
+            </div>
+            <button onClick={() => { setChatOpen(true); setTimeout(() => inputRef.current?.focus(), 300); }} style={{ background: accent, color: "#fff", border: "none", borderRadius: 8, padding: "7px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>💬 Coach</button>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: chatOpen ? 700 : 1100, margin: "0 auto", padding: "24px 20px 100px", transition: "max-width .4s" }}>
+
+          {/* DASHBOARD */}
+          {view === "dashboard" && (
+            <div style={{ animation: "fadeUp .4s" }}>
+              <h1 style={{ fontFamily: d, fontSize: 30, fontWeight: 700, marginBottom: 4 }}>Your Admissions HQ</h1>
+              <p style={{ fontSize: 14, color: muted, marginBottom: 24 }}>{schools.length === 0 ? "Start by exploring schools or adding your own." : `Tracking ${schools.length} school${schools.length !== 1 ? "s" : ""} · ${tasks.length} tasks`}</p>
+              {schools.length === 0 ? (
+                <div style={{ background: card, borderRadius: 16, border: `1px solid ${bdr}`, padding: "48px 32px", textAlign: "center" }}>
+                  <div style={{ fontSize: 48, marginBottom: 16 }}>🎯</div>
+                  <h2 style={{ fontFamily: d, fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Start Your College List</h2>
+                  <p style={{ fontSize: 15, color: muted, maxWidth: 440, margin: "0 auto 24px", lineHeight: 1.6 }}>Explore 30 schools to find your fit, or add ones you know. We'll generate a complete timeline for each.</p>
+                  <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                    <button onClick={() => setView("explore")} style={{ background: accent, color: "#fff", border: "none", borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>🔍 Explore Schools</button>
+                    <button onClick={() => setView("add")} style={{ background: "transparent", color: accent, border: `2px solid ${accent}`, borderRadius: 10, padding: "12px 28px", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>+ Add Manually</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(165px,1fr))", gap: 12, marginBottom: 18 }}>
+                    {[{ l: "Schools", v: schools.length, i: "🏫", c: accent },{ l: "Done", v: `${completedCount}/${tasks.length}`, i: "✅", c: "#22C55E" },{ l: "Progress", v: `${progress}%`, i: "📈", c: gold },{ l: "Overdue", v: overdueTasks.length, i: overdueTasks.length ? "⚠️" : "🎉", c: overdueTasks.length ? "#EF4444" : "#22C55E" }].map((s,i) => (
+                      <div key={i} className="hov" style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 16, animation: `fadeUp .4s ease ${i*.05}s both` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}><span style={{ fontSize: 11, fontWeight: 500, color: muted, textTransform: "uppercase", letterSpacing: 1 }}>{s.l}</span><span style={{ fontSize: 17 }}>{s.i}</span></div>
+                        <div style={{ fontFamily: d, fontSize: 24, fontWeight: 700, color: s.c }}>{s.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 16, marginBottom: 18 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Overall Progress</span><span style={{ fontSize: 13, fontWeight: 600, color: accent }}>{progress}%</span></div>
+                    <div style={{ height: 8, background: "#E2E8F0", borderRadius: 8, overflow: "hidden" }}><div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg,${accent},#60A5FA)`, borderRadius: 8, transition: "width .6s" }} /></div>
+                  </div>
+                  <div style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 16 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}><h3 style={{ fontFamily: d, fontSize: 18, fontWeight: 600 }}>Coming Up Next</h3><button className="nb" onClick={() => setView("tasks")} style={{ fontSize: 12, color: accent, fontWeight: 600, padding: "4px 8px", borderRadius: 6 }}>View All →</button></div>
+                    {upcomingTasks.length === 0 ? <p style={{ fontSize: 13, color: muted, textAlign: "center", padding: 16 }}>All caught up! 🎉</p> : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        {upcomingTasks.map(t => { const dd = daysUntil(t.due), cc = CATEGORY_COLORS[t.category], urg = dd < 0; return (
+                          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: urg ? "#FEF2F2" : surface }}>
+                            <button onClick={() => toggleTask(t.id)} style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${urg ? "#EF4444" : bdr}`, background: "transparent", cursor: "pointer", flexShrink: 0 }} />
+                            <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 500 }}>{t.label}</div><div style={{ fontSize: 11, color: muted }}>{t.school}</div></div>
+                            <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 16, background: cc.bg, color: cc.text, fontWeight: 500 }}>{t.category}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: urg ? "#EF4444" : dd <= 7 ? gold : muted }}>{urg ? `${Math.abs(dd)}d late` : dd === 0 ? "Today" : `${dd}d`}</span>
+                          </div>
+                        ); })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* EXPLORE */}
+          {view === "explore" && (
+            <div style={{ animation: "fadeUp .4s" }}>
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{ fontFamily: d, fontSize: 30, fontWeight: 700, marginBottom: 4 }}>Explore Schools</h1>
+                <p style={{ fontSize: 14, color: muted }}>Discover your fit from {SCHOOL_DATABASE.length} schools. Filter, compare, and add to your list.</p>
+              </div>
+
+              <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                <input className="inp" placeholder="Search name, location, or major..." value={searchQ} onChange={e => setSearchQ(e.target.value)} style={{ flex: 1, minWidth: 200, padding: "10px 16px", borderRadius: 10, border: `1.5px solid ${bdr}`, fontSize: 14, color: navy, background: card }} />
+                <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${bdr}`, fontSize: 13, color: slate, background: card, cursor: "pointer" }}>
+                  <option value="ranking">Sort: Ranking</option><option value="acceptance">Sort: Acceptance Rate</option><option value="tuition_low">Sort: Tuition (Low→High)</option><option value="name">Sort: A→Z</option>
+                </select>
+                <button onClick={() => setShowSavedOnly(p => !p)} style={{ padding: "10px 16px", borderRadius: 10, border: `1.5px solid ${showSavedOnly ? "#F59E0B" : bdr}`, fontSize: 13, background: showSavedOnly ? "#FFFBEB" : card, color: showSavedOnly ? "#92400E" : slate, cursor: "pointer", fontWeight: showSavedOnly ? 600 : 400 }}>⭐ Saved ({savedSchools.length})</button>
+              </div>
+
+              <div style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 16, marginBottom: 18 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14 }}>
+                  <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Region</div><Chip items={REGIONS} selected={filterRegion} setSelected={setFilterRegion} /></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Type</div><Chip items={TYPES} selected={filterType} setSelected={setFilterType} /></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Size</div><Chip items={SIZES} selected={filterSize} setSelected={setFilterSize} /></div>
+                  <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Setting</div><Chip items={SETTINGS} selected={filterSetting} setSelected={setFilterSetting} /></div>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 6, textTransform: "uppercase", letterSpacing: .5 }}>Interests / Majors</div>
+                  <Chip items={TOP_INTERESTS} selected={filterInterest} setSelected={setFilterInterest} />
+                </div>
+                {(filterRegion.length || filterType.length || filterSize.length || filterSetting.length || filterInterest.length || searchQ || showSavedOnly) ? (
+                  <button className="nb" onClick={() => { setFilterRegion([]); setFilterType([]); setFilterSize([]); setFilterSetting([]); setFilterInterest([]); setSearchQ(""); setShowSavedOnly(false); }} style={{ marginTop: 10, fontSize: 12, color: "#EF4444", fontWeight: 500 }}>✕ Clear all filters</button>
+                ) : null}
+              </div>
+
+              <div style={{ fontSize: 13, color: muted, marginBottom: 10 }}>{exploredSchools.length} school{exploredSchools.length !== 1 ? "s" : ""} found</div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {exploredSchools.map((s, i) => {
+                  const exp = expandedSchool === s.name, sv = savedSchools.includes(s.name), added = schools.some(sc => sc.name === s.name);
+                  const tier = classifySchool(s.acceptance), tc = TYPE_COLORS[tier];
+                  return (
+                    <div key={s.name} className="hov" style={{ background: card, borderRadius: 14, border: `1px solid ${added ? "#93C5FD" : bdr}`, overflow: "hidden", animation: `fadeUp .3s ease ${Math.min(i,12)*.03}s both` }}>
+                      <div style={{ padding: "16px 18px", cursor: "pointer" }} onClick={() => setExpandedSchool(exp ? null : s.name)}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3, flexWrap: "wrap" }}>
+                              <span style={{ fontFamily: d, fontSize: 17, fontWeight: 700 }}>{s.name}</span>
+                              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 14, background: tc.bg, color: tc.text, border: `1px solid ${tc.border}`, fontWeight: 600 }}>{tier}</span>
+                              {added && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 14, background: "#DBEAFE", color: accent, fontWeight: 600 }}>Added ✓</span>}
+                              <span style={{ fontSize: 11, color: muted }}>#{s.ranking}</span>
+                            </div>
+                            <div style={{ fontSize: 12, color: muted }}>{s.location} · {s.type} · {s.enrollment.toLocaleString()} students · {s.setting}</div>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <button onClick={e => { e.stopPropagation(); toggleSaved(s.name); }} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>{sv ? "⭐" : "☆"}</button>
+                            <span style={{ fontSize: 16, color: muted, transition: "transform .2s", transform: exp ? "rotate(180deg)" : "" }}>▾</span>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 14, marginTop: 7, fontSize: 12, color: slate, flexWrap: "wrap" }}>
+                          <span><b>{s.acceptance}%</b> accept</span>
+                          <span>SAT <b>{s.sat}</b></span>
+                          <span><b>${(s.tuition / 1000).toFixed(0)}k</b>/yr</span>
+                          <span><b>{s.finAid}%</b> need met</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 4, marginTop: 7, flexWrap: "wrap" }}>
+                          {s.strengths.slice(0, 5).map(st => <span key={st} style={{ fontSize: 10, padding: "2px 7px", borderRadius: 12, background: surface, color: slate, border: `1px solid ${bdr}` }}>{st}</span>)}
+                        </div>
+                      </div>
+                      {exp && (
+                        <div style={{ padding: "0 18px 18px", borderTop: `1px solid ${bdr}`, paddingTop: 14, animation: "fadeUp .2s" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                            <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 4, textTransform: "uppercase", letterSpacing: .5 }}>Vibe</div><div style={{ fontSize: 14, lineHeight: 1.5 }}>{s.vibe}</div></div>
+                            <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 4, textTransform: "uppercase", letterSpacing: .5 }}>Mascot</div><div style={{ fontSize: 14 }}>{s.mascot}</div></div>
+                            <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 4, textTransform: "uppercase", letterSpacing: .5 }}>Strong Programs</div><div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{s.strengths.map(st => <span key={st} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 12, background: "#EFF6FF", color: accent }}>{st}</span>)}</div></div>
+                            <div><div style={{ fontSize: 11, fontWeight: 600, color: slate, marginBottom: 4, textTransform: "uppercase", letterSpacing: .5 }}>Financial Aid</div><div style={{ fontSize: 14 }}>{s.finAid}% of demonstrated need met</div></div>
+                          </div>
+                          {!added ? (
+                            <button onClick={e => { e.stopPropagation(); addSchool({ name: s.name, type: tier, deadline: "2026-01-15", earlyDeadline: "", location: s.location, major: "" }); }} style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>+ Add to My Schools & Generate Timeline</button>
+                          ) : (
+                            <div style={{ textAlign: "center", padding: 8, fontSize: 13, color: "#22C55E", fontWeight: 600 }}>✓ Already on your list</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {exploredSchools.length === 0 && <div style={{ textAlign: "center", padding: 48, color: muted }}><div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div><p>No schools match your filters. Try broadening your search.</p></div>}
+              </div>
+            </div>
+          )}
+
+          {/* MY SCHOOLS */}
+          {view === "schools" && (
+            <div style={{ animation: "fadeUp .4s" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+                <div><h1 style={{ fontFamily: d, fontSize: 28, fontWeight: 700 }}>My Schools</h1><p style={{ fontSize: 13, color: muted, marginTop: 3 }}>{schools.length} school{schools.length !== 1 ? "s" : ""} · {schools.filter(s => s.type === "Reach").length}R / {schools.filter(s => s.type === "Target").length}T / {schools.filter(s => s.type === "Safety").length}S</p></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => setView("explore")} style={{ background: "transparent", color: accent, border: `1.5px solid ${accent}`, borderRadius: 10, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>🔍 Explore</button>
+                  <button onClick={() => setView("add")} style={{ background: accent, color: "#fff", border: "none", borderRadius: 10, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add</button>
+                </div>
+              </div>
+              {schools.length === 0 ? <div style={{ textAlign: "center", padding: 48, color: muted }}><p>No schools yet. <span onClick={() => setView("explore")} style={{ color: accent, fontWeight: 600, cursor: "pointer" }}>Explore schools</span> to get started.</p></div> : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {schools.map((s, i) => {
+                    const tc = TYPE_COLORS[s.type] || TYPE_COLORS.Target, st = tasks.filter(t => t.school === s.name), sd = st.filter(t => t.done).length, sp = st.length ? Math.round((sd / st.length) * 100) : 0, dd = daysUntil(s.deadline);
+                    return (
+                      <div key={i} className="hov" style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 16, animation: `fadeUp .3s ease ${i*.04}s both` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                          <div><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 3 }}><span style={{ fontFamily: d, fontSize: 17, fontWeight: 700 }}>{s.name}</span><span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 14, background: tc.bg, color: tc.text, border: `1px solid ${tc.border}`, fontWeight: 600 }}>{s.type}</span></div><span style={{ fontSize: 12, color: muted }}>{s.location}</span></div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                            <select value={s.status} onChange={e => updateStatus(s.name, e.target.value)} style={{ fontSize: 11, padding: "3px 6px", borderRadius: 6, border: `1px solid ${bdr}`, color: slate, background: surface, cursor: "pointer" }}><option>Not Started</option><option>In Progress</option><option>Submitted</option><option>Accepted</option><option>Rejected</option><option>Waitlisted</option></select>
+                            <button onClick={() => removeSchool(s.name)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: muted }}>✕</button>
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12 }}>
+                          <span style={{ color: dd < 14 && dd >= 0 ? "#EF4444" : muted, fontWeight: dd < 14 ? 600 : 400 }}>{formatDate(s.deadline)} ({dd < 0 ? "passed" : `${dd}d`})</span><span style={{ color: muted }}>·</span><span>{sd}/{st.length} tasks</span>
+                          <div style={{ flex: 1 }} /><div style={{ width: 80, height: 5, background: "#E2E8F0", borderRadius: 6, overflow: "hidden" }}><div style={{ height: "100%", width: `${sp}%`, background: sp === 100 ? "#22C55E" : accent, borderRadius: 6 }} /></div><span style={{ fontSize: 11, fontWeight: 600, color: sp === 100 ? "#22C55E" : accent }}>{sp}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ADD */}
+          {view === "add" && (
+            <div style={{ animation: "fadeUp .4s", maxWidth: 520 }}>
+              <button className="nb" onClick={() => setView("schools")} style={{ fontSize: 13, color: muted, marginBottom: 14 }}>← Back</button>
+              <h1 style={{ fontFamily: d, fontSize: 28, fontWeight: 700, marginBottom: 20 }}>Add a School</h1>
+              <div style={{ background: card, borderRadius: 14, border: `1px solid ${bdr}`, padding: 22 }}>
+                {[["name","School Name","e.g. Stanford","text"],["location","Location","e.g. Stanford, CA","text"],["major","Intended Major (optional)","e.g. CS","text"],["deadline","Regular Deadline","","date"],["earlyDeadline","Early Deadline (optional)","","date"]].map(([k,l,p,t]) => (
+                  <div key={k} style={{ marginBottom: 14 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: slate, marginBottom: 4 }}>{l}</label><input className="inp" type={t} placeholder={p} value={addForm[k]} onChange={e => setAddForm(p => ({ ...p, [k]: e.target.value }))} style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: `1.5px solid ${bdr}`, fontSize: 14, color: navy, background: surface }} /></div>
+                ))}
+                <div style={{ marginBottom: 18 }}><label style={{ display: "block", fontSize: 12, fontWeight: 600, color: slate, marginBottom: 4 }}>Type</label><div style={{ display: "flex", gap: 6 }}>{["Reach","Target","Safety"].map(t => { const tc = TYPE_COLORS[t], sel = addForm.type === t; return <button key={t} onClick={() => setAddForm(p => ({ ...p, type: t }))} style={{ padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: sel ? 600 : 400, background: sel ? tc.bg : "transparent", color: sel ? tc.text : muted, border: `1.5px solid ${sel ? tc.border : bdr}`, cursor: "pointer" }}>{t}</button>; })}</div></div>
+                <button disabled={!addForm.name || !addForm.deadline} onClick={() => { if (addForm.name && addForm.deadline) { addSchool(addForm); setAddForm({ name: "", type: "Target", deadline: "", earlyDeadline: "", location: "", major: "" }); setView("schools"); } }} style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", fontSize: 14, fontWeight: 600, background: addForm.name && addForm.deadline ? accent : "#CBD5E1", color: "#fff", cursor: addForm.name && addForm.deadline ? "pointer" : "not-allowed" }}>Add & Generate Timeline</button>
+              </div>
+            </div>
+          )}
+
+          {/* TASKS */}
+          {view === "tasks" && (
+            <div style={{ animation: "fadeUp .4s" }}>
+              <h1 style={{ fontFamily: d, fontSize: 28, fontWeight: 700, marginBottom: 4 }}>All Tasks</h1>
+              <p style={{ fontSize: 13, color: muted, marginBottom: 16 }}>{completedCount}/{tasks.length} done · {overdueTasks.length} overdue</p>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16 }}>
+                {[["all","All"],["overdue",`Overdue (${overdueTasks.length})`],["upcoming","Next 2 weeks"],...Object.keys(CATEGORY_COLORS).map(c => [c, c[0].toUpperCase()+c.slice(1)]),["done","Done"]].map(([id,l]) => (
+                  <button key={id} className="nb" onClick={() => setFilter(id)} style={{ padding: "5px 12px", borderRadius: 20, fontSize: 12, fontWeight: filter === id ? 600 : 400, background: filter === id ? accent : surface, color: filter === id ? "#fff" : slate, border: `1px solid ${filter === id ? accent : bdr}` }}>{l}</button>
+                ))}
+              </div>
+              {filteredTasks.length === 0 ? <p style={{ textAlign: "center", padding: 40, color: muted }}>No tasks here.</p> : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[...filteredTasks].sort((a, b) => a.done - b.done || new Date(a.due) - new Date(b.due)).map((t, i) => {
+                    const dd = daysUntil(t.due), cc = CATEGORY_COLORS[t.category], urg = !t.done && dd < 0;
+                    return (
+                      <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 11px", borderRadius: 8, background: t.done ? surface : urg ? "#FEF2F2" : card, border: `1px solid ${urg ? "#FECACA" : bdr}`, opacity: t.done ? .5 : 1, animation: `fadeUp .3s ease ${Math.min(i,15)*.02}s both` }}>
+                        <button onClick={() => toggleTask(t.id)} style={{ width: 21, height: 21, borderRadius: 6, border: `2px solid ${t.done ? "#22C55E" : urg ? "#EF4444" : bdr}`, background: t.done ? "#22C55E" : "transparent", color: "#fff", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>{t.done ? "✓" : ""}</button>
+                        <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 500, textDecoration: t.done ? "line-through" : "" }}>{t.label}</div><div style={{ fontSize: 11, color: muted }}>{t.school} · {formatDate(t.due)}</div></div>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 14, background: cc.bg, color: cc.text, fontWeight: 500 }}>{t.category}</span>
+                        {!t.done && <span style={{ fontSize: 11, fontWeight: 600, color: urg ? "#EF4444" : dd <= 7 ? gold : muted }}>{urg ? `${Math.abs(dd)}d late` : dd === 0 ? "Today" : `${dd}d`}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* CHAT */}
+        {chatOpen && (
+          <div style={{ position: "fixed", top: 0, right: 0, width: Math.min(380, window.innerWidth * .92), height: "100vh", background: card, borderLeft: `1px solid ${bdr}`, boxShadow: "-4px 0 32px rgba(15,23,42,.08)", display: "flex", flexDirection: "column", zIndex: 200, animation: "slideIn .3s cubic-bezier(.16,1,.3,1)" }}>
+            <div style={{ padding: "13px 16px", borderBottom: `1px solid ${bdr}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div><div style={{ fontFamily: d, fontSize: 16, fontWeight: 700 }}>Admissions Coach</div><div style={{ fontSize: 11, color: muted }}>Essays, strategy, school fit</div></div>
+              <button onClick={() => setChatOpen(false)} style={{ background: "none", border: "none", fontSize: 18, color: muted, cursor: "pointer" }}>✕</button>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: 12 }}>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start", marginBottom: 10, animation: "fadeUp .3s" }}>
+                  <div style={{ maxWidth: "85%", padding: "10px 14px", borderRadius: m.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px", background: m.role === "user" ? accent : surface, color: m.role === "user" ? "#fff" : navy, fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{m.content}</div>
+                </div>
+              ))}
+              {loading && <div style={{ display: "flex", marginBottom: 10 }}><div style={{ padding: "10px 16px", borderRadius: "14px 14px 14px 4px", background: surface, display: "flex", gap: 5 }}>{[0,.2,.4].map(dd => <span key={dd} className="td" style={{ width: 7, height: 7, borderRadius: "50%", background: muted, animationDelay: `${dd}s` }} />)}</div></div>}
+              <div ref={chatEndRef} />
+            </div>
+            <div style={{ padding: "10px 12px 12px", borderTop: `1px solid ${bdr}` }}>
+              <div style={{ display: "flex", gap: 7 }}>
+                <input ref={inputRef} className="inp" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Ask about essays, school fit..." style={{ flex: 1, padding: "9px 13px", borderRadius: 10, border: `1.5px solid ${bdr}`, fontSize: 13, color: navy, background: surface }} />
+                <button onClick={sendMessage} disabled={!input.trim() || loading} style={{ width: 38, height: 38, borderRadius: 10, border: "none", background: input.trim() && !loading ? accent : "#CBD5E1", color: "#fff", fontSize: 16, cursor: input.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
