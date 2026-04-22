@@ -3,20 +3,18 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  var apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: { message: "GEMINI_API_KEY not set in Vercel environment variables." } });
   }
 
   try {
-    // Frontend sends Anthropic format: { system, messages, model, max_tokens }
-    // We translate to Gemini format so the frontend doesn't need any changes
-    const { system, messages } = req.body;
+    var body = req.body;
+    var system = body.system || "You are a helpful assistant.";
+    var messages = body.messages || [];
 
-    // Convert Anthropic roles to Gemini roles
-    // Anthropic: [{ role: "user"|"assistant", content: "..." }]
-    // Gemini:    [{ role: "user"|"model", parts: [{ text: "..." }] }]
-    const geminiContents = messages.map(function(m) {
+    // Convert Anthropic message format to Gemini format
+    var geminiContents = messages.map(function(m) {
       return {
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }]
@@ -24,17 +22,15 @@ module.exports = async function handler(req, res) {
     });
 
     var geminiBody = {
-      systemInstruction: {
-        parts: [{ text: system || "You are a helpful assistant." }]
-      },
+      systemInstruction: { parts: [{ text: system }] },
       contents: geminiContents,
       generationConfig: {
-        maxOutputTokens: 1000,
+        maxOutputTokens: 800,
         temperature: 0.7
       }
     };
 
-    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey;
+    var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" + apiKey;
 
     var response = await fetch(url, {
       method: "POST",
@@ -51,8 +47,6 @@ module.exports = async function handler(req, res) {
     }
 
     // Convert Gemini response back to Anthropic format so frontend works unchanged
-    // Gemini:    { candidates: [{ content: { parts: [{ text: "..." }] } }] }
-    // Anthropic: { content: [{ type: "text", text: "..." }] }
     var text = "";
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
       text = data.candidates[0].content.parts.map(function(p) { return p.text; }).join("");

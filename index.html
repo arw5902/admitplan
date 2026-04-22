@@ -3,20 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AdmitPlan — College Admissions Planner</title>
+    <title>AdmitPlan \u2014 College Admissions Planner</title>
     <meta name="description" content="AI-powered college admissions planner with school discovery, deadline management, and coaching.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
-    <style>
-        html, body, #root { margin: 0; padding: 0; height: 100%; }
-    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>\uD83C\uDF93</text></svg>">
+    <style>html, body, #root { margin: 0; padding: 0; height: 100%; }</style>
 </head>
 <body>
     <div id="root"></div>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script type="text/babel">
-const { useState, useRef, useEffect, useMemo } = React;
+const { useState, useRef, useEffect, useMemo, useCallback } = React;
+
+// Supabase config - replace these with your project values
+const SUPABASE_URL = "https://npxvxpkzgswopnljnutq.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_lIaidl-HoECE2fgoIo8B1Q_Md8Jwe75";
+const sbClient = (SUPABASE_URL.indexOf("__") === -1)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+// ── Auth Screen ──
+function AuthScreen({ onAuth }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email || !password) { setError("Please fill in both fields."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setError(""); setLoading(true);
+    try {
+      const result = isSignUp
+        ? await sbClient.auth.signUp({ email, password })
+        : await sbClient.auth.signInWithPassword({ email, password });
+      if (result.error) setError(result.error.message);
+      else onAuth(result.data.user || result.data.session?.user);
+    } catch (e) { setError("Something went wrong."); }
+    setLoading(false);
+  };
+
+  return (
+    <>
+      <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+      <div style={{ minHeight: "100vh", background: "linear-gradient(180deg,#F1F5F9,#F8FAFC)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Libre Franklin',sans-serif" }}>
+        <div style={{ background: "#fff", borderRadius: 20, border: "1px solid #E2E8F0", padding: "48px 40px", maxWidth: 400, width: "90%", boxShadow: "0 8px 32px rgba(15,23,42,.06)" }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>🎓</div>
+            <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#0F172A", margin: "0 0 4px" }}>AdmitPlan</h1>
+            <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>{isSignUp ? "Create your account" : "Sign in to your account"}</p>
+          </div>
+          {error && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#991B1B", marginBottom: 16 }}>{error}</div>}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Email</label>
+            <input value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="you@school.edu" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", boxSizing: "border-box", outline: "none" }} />
+          </div>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="At least 6 characters" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", boxSizing: "border-box", outline: "none" }} />
+          </div>
+          <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: loading ? "#93C5FD" : "#2563EB", color: "#fff", fontSize: 15, fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>{loading ? "Please wait..." : (isSignUp ? "Create Account" : "Sign In")}</button>
+          <div style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "#94A3B8" }}>
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+            <span onClick={() => { setIsSignUp(!isSignUp); setError(""); }} style={{ color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>{isSignUp ? "Sign In" : "Sign Up"}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── App ──
 const SCHOOL_DATABASE = [
   { name: "MIT", location: "Cambridge, MA", region: "Northeast", type: "Private", size: "Small", acceptance: 4, sat: "1550-1580", tuition: 59750, ranking: 2, strengths: ["Engineering", "Computer Science", "Mathematics", "Physics", "AI/ML"], vibe: "Intense & innovative", setting: "Urban", mascot: "Engineers", enrollment: 4600, finAid: 100 },
   { name: "Stanford University", location: "Stanford, CA", region: "West", type: "Private", size: "Medium", acceptance: 4, sat: "1540-1570", tuition: 62484, ranking: 3, strengths: ["Computer Science", "Engineering", "Business", "Biology", "Economics"], vibe: "Entrepreneurial & sunny", setting: "Suburban", mascot: "Cardinal", enrollment: 8100, finAid: 100 },
@@ -80,7 +140,7 @@ function formatDate(d) { return new Date(d + "T00:00:00").toLocaleDateString("en
 function daysUntil(d) { const now = new Date(); now.setHours(0,0,0,0); return Math.ceil((new Date(d + "T00:00:00") - now) / 864e5); }
 function classifySchool(acc) { if (acc <= 10) return "Reach"; if (acc <= 30) return "Target"; return "Safety"; }
 
-function App() {
+function App({ user, supabase: sb }) {
   const [schools, setSchools] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState("dashboard");
@@ -102,6 +162,41 @@ function App() {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  
+  // ── Supabase Persistence ──
+  const saveTimeout = useRef(null);
+  const isLoadingData = useRef(false);
+
+  // Load user data on mount
+  useEffect(() => {
+    if (!sb || !user) return;
+    isLoadingData.current = true;
+    sb.from("user_data").select("*").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          if (data.schools && data.schools.length) setSchools(data.schools);
+          if (data.tasks && data.tasks.length) setTasks(data.tasks);
+          if (data.saved_schools && data.saved_schools.length) setSavedSchools(data.saved_schools);
+        }
+        setTimeout(() => { isLoadingData.current = false; }, 500);
+      })
+      .catch(() => { isLoadingData.current = false; });
+  }, []);
+
+  // Auto-save on changes (debounced 1s)
+  useEffect(() => {
+    if (!sb || !user || isLoadingData.current) return;
+    if (saveTimeout.current) clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      sb.from("user_data").upsert({
+        user_id: user.id,
+        schools: schools,
+        tasks: tasks,
+        saved_schools: savedSchools
+      }, { onConflict: "user_id" });
+    }, 1000);
+  }, [schools, tasks, savedSchools]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -186,6 +281,7 @@ function App() {
                 <button key={id} className="nb" onClick={() => setView(id)} style={{ padding: "7px 13px", borderRadius: 8, fontSize: 13, fontWeight: view === id ? 600 : 400, color: view === id ? accent : slate, background: view === id ? "rgba(37,99,235,.08)" : "transparent" }}>{icon} {label}</button>
               ))}
             </div>
+            {sb && <button onClick={() => sb.auth.signOut()} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 13px", fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>Sign Out</button>}
             <button onClick={() => { setChatOpen(true); setTimeout(() => inputRef.current?.focus(), 300); }} style={{ background: accent, color: "#fff", border: "none", borderRadius: 8, padding: "7px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>💬 Coach</button>
           </div>
         </div>
@@ -439,8 +535,31 @@ function App() {
 }
 
 
+// ── Root: Auth Gate ──
+function Root() {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!sbClient) { setChecking(false); return; }
+    sbClient.auth.getSession().then(function(r) {
+      if (r.data.session) setUser(r.data.session.user);
+      setChecking(false);
+    });
+    var sub = sbClient.auth.onAuthStateChange(function(ev, session) {
+      setUser(session ? session.user : null);
+    });
+    return function() { sub.data.subscription.unsubscribe(); };
+  }, []);
+
+  if (!sbClient) return React.createElement(App, { user: null, supabase: null });
+  if (checking) return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" } }, "Loading...");
+  if (!user) return React.createElement(AuthScreen, { onAuth: setUser });
+  return React.createElement(App, { user: user, supabase: sbClient });
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(App));
+root.render(React.createElement(Root));
     </script>
 </body>
 </html>
