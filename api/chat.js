@@ -1,12 +1,11 @@
-export default async function handler(req, res) {
-  // Only allow POST
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "ANTHROPIC_API_KEY not configured in Vercel environment variables." });
+    return res.status(500).json({ error: "ANTHROPIC_API_KEY not set in Vercel environment variables." });
   }
 
   try {
@@ -15,14 +14,14 @@ export default async function handler(req, res) {
       headers: {
         "Content-Type": "application/json",
         "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        "anthropic-version": "2023-06-01"
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(req.body)
     });
 
     const data = await response.json();
     return res.status(response.status).json(data);
-  } catch (error) {
-    return res.status(500).json({ error: "Failed to reach Anthropic API." });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to connect to Anthropic API: " + err.message });
   }
-}
+};
