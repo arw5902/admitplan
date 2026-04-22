@@ -1,5 +1,22 @@
-import { useState, useRef, useEffect, useMemo } from "react";
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdmitPlan — College Admissions Planner</title>
+    <meta name="description" content="AI-powered college admissions planner with school discovery, deadline management, and coaching.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+    <style>
+        html, body, #root { margin: 0; padding: 0; height: 100%; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+const { useState, useRef, useEffect, useMemo } = React;
 const SCHOOL_DATABASE = [
   { name: "MIT", location: "Cambridge, MA", region: "Northeast", type: "Private", size: "Small", acceptance: 4, sat: "1550-1580", tuition: 59750, ranking: 2, strengths: ["Engineering", "Computer Science", "Mathematics", "Physics", "AI/ML"], vibe: "Intense & innovative", setting: "Urban", mascot: "Engineers", enrollment: 4600, finAid: 100 },
   { name: "Stanford University", location: "Stanford, CA", region: "West", type: "Private", size: "Medium", acceptance: 4, sat: "1540-1570", tuition: 62484, ranking: 3, strengths: ["Computer Science", "Engineering", "Business", "Biology", "Economics"], vibe: "Entrepreneurial & sunny", setting: "Suburban", mascot: "Cardinal", enrollment: 8100, finAid: 100 },
@@ -63,7 +80,7 @@ function formatDate(d) { return new Date(d + "T00:00:00").toLocaleDateString("en
 function daysUntil(d) { const now = new Date(); now.setHours(0,0,0,0); return Math.ceil((new Date(d + "T00:00:00") - now) / 864e5); }
 function classifySchool(acc) { if (acc <= 10) return "Reach"; if (acc <= 30) return "Target"; return "Safety"; }
 
-export default function App() {
+function App() {
   const [schools, setSchools] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState("dashboard");
@@ -123,9 +140,10 @@ export default function App() {
     const nm = [...messages, { role: "user", content: userMsg }]; setMessages(nm); setLoading(true);
     try {
       const sp = `You are a warm, knowledgeable college admissions coach helping a high school student. Their school list: ${JSON.stringify(schools.map(s => ({ name: s.name, type: s.type, deadline: s.deadline, status: s.status })))}. Saved/bookmarked: ${savedSchools.join(", ") || "None"}. Tasks: ${tasks.length} total, ${completedCount} done (${progress}%), ${overdueTasks.length} overdue. Today: ${new Date().toISOString().split("T")[0]}. Keep responses 2-5 sentences. Be encouraging but honest. You can suggest schools from: ${SCHOOL_DATABASE.map(s => s.name).join(", ")}.`;
-      const res = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: sp, messages: nm.map(m => ({ role: m.role, content: m.content })) }) });
+      const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: sp, messages: nm.map(m => ({ role: m.role, content: m.content })) }) });
       const data = await res.json();
-      setMessages(p => [...p, { role: "assistant", content: data.content?.map(b => b.text || "").filter(Boolean).join("\n") || "Sorry, try again!" }]);
+      if (data.error) { setMessages(p => [...p, { role: "assistant", content: `Something went wrong: ${data.error.message || data.error}. Try again!` }]); }
+      else { setMessages(p => [...p, { role: "assistant", content: data.content?.map(b => b.text || "").filter(Boolean).join("\n") || "Sorry, try again!" }]); }
     } catch { setMessages(p => [...p, { role: "assistant", content: "Had trouble connecting. Try again!" }]); }
     setLoading(false);
   };
@@ -419,3 +437,10 @@ export default function App() {
     </>
   );
 }
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(App));
+    </script>
+</body>
+</html>
