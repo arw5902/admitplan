@@ -13,36 +13,89 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-analytics-compat.js"></script>
+
     <script type="text/babel">
 const { useState, useRef, useEffect, useMemo, useCallback } = React;
 
-// Supabase config - replace these with your project values
-const SUPABASE_URL = "https://npxvxpkzgswopnljnutq.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_lIaidl-HoECE2fgoIo8B1Q_Md8Jwe75";
-const sbClient = (SUPABASE_URL.indexOf("__") === -1)
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+// ── Firebase Configuration ──
+const firebaseConfig = {
+  apiKey: "AIzaSyD0ZpHjuZkLN9ayBZ6oHPK4kIDyV0s9xZM",
+  authDomain: "admitplan-47b44.firebaseapp.com",
+  projectId: "admitplan-47b44",
+  storageBucket: "admitplan-47b44.firebasestorage.app",
+  messagingSenderId: "292712566469",
+  appId: "1:292712566469:web:1a48f7c97830666d972aac",
+  measurementId: "G-7DTZQ9JENF"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+firebase.analytics();
 
 // ── Auth Screen ──
 function AuthScreen({ onAuth }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [usePasswordless, setUsePasswordless] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Handle passwordless sign-in completion
+  useEffect(() => {
+    if (auth.isSignInWithEmailLink(window.location.href)) {
+      let emailForLink = window.localStorage.getItem('emailForSignIn');
+      if (!emailForLink) {
+        emailForLink = window.prompt('Please provide your email for confirmation');
+      }
+      setLoading(true);
+      auth.signInWithEmailLink(emailForLink, window.location.href)
+        .then((result) => {
+          window.localStorage.removeItem('emailForSignIn');
+          onAuth(result.user);
+        })
+        .catch((error) => {
+          setError(error.message);
+          setLoading(false);
+        });
+    }
+  }, []);
+
   const handleSubmit = async () => {
-    if (!email || !password) { setError("Please fill in both fields."); return; }
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    setError(""); setLoading(true);
+    if (!email) { setError("Please enter your email."); return; }
+    if (!usePasswordless && !password) { setError("Please enter your password."); return; }
+    
+    setError(""); setInfo(""); setLoading(true);
     try {
-      const result = isSignUp
-        ? await sbClient.auth.signUp({ email, password })
-        : await sbClient.auth.signInWithPassword({ email, password });
-      if (result.error) setError(result.error.message);
-      else onAuth(result.data.user || result.data.session?.user);
-    } catch (e) { setError("Something went wrong."); }
+      if (usePasswordless) {
+        const actionCodeSettings = {
+          url: window.location.href,
+          handleCodeInApp: true
+        };
+        await auth.sendSignInLinkToEmail(email, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', email);
+        setInfo("Check your email for the sign-in link!");
+      } else {
+        let userCredential;
+        if (isSignUp) {
+          userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        } else {
+          userCredential = await auth.signInWithEmailAndPassword(email, password);
+        }
+        onAuth(userCredential.user);
+      }
+    } catch (e) { 
+      setError(e.message); 
+    }
     setLoading(false);
   };
 
@@ -54,22 +107,41 @@ function AuthScreen({ onAuth }) {
           <div style={{ textAlign: "center", marginBottom: 32 }}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>🎓</div>
             <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 28, fontWeight: 700, color: "#0F172A", margin: "0 0 4px" }}>AdmitPlan</h1>
-            <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>{isSignUp ? "Create your account" : "Sign in to your account"}</p>
+            <p style={{ fontSize: 14, color: "#94A3B8", margin: 0 }}>
+              {usePasswordless ? "Sign in with email link" : (isSignUp ? "Create your account" : "Sign in to your account")}
+            </p>
           </div>
           {error && <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#991B1B", marginBottom: 16 }}>{error}</div>}
+          {info && <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#166534", marginBottom: 16 }}>{info}</div>}
+          
           <div style={{ marginBottom: 14 }}>
             <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Email</label>
             <input value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="you@school.edu" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", boxSizing: "border-box", outline: "none" }} />
           </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="At least 6 characters" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", boxSizing: "border-box", outline: "none" }} />
-          </div>
-          <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: loading ? "#93C5FD" : "#2563EB", color: "#fff", fontSize: 15, fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>{loading ? "Please wait..." : (isSignUp ? "Create Account" : "Sign In")}</button>
+
+          {!usePasswordless && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#334155", marginBottom: 4 }}>Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} placeholder="At least 6 characters" style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1.5px solid #E2E8F0", fontSize: 14, color: "#0F172A", boxSizing: "border-box", outline: "none" }} />
+            </div>
+          )}
+
+          <button onClick={handleSubmit} disabled={loading} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: loading ? "#93C5FD" : "#2563EB", color: "#fff", fontSize: 15, fontWeight: 600, cursor: loading ? "wait" : "pointer" }}>
+            {loading ? "Please wait..." : (usePasswordless ? "Send Link" : (isSignUp ? "Create Account" : "Sign In"))}
+          </button>
+
           <div style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: "#94A3B8" }}>
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <span onClick={() => { setIsSignUp(!isSignUp); setError(""); }} style={{ color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>{isSignUp ? "Sign In" : "Sign Up"}</span>
+            <span onClick={() => { setUsePasswordless(!usePasswordless); setError(""); setInfo(""); }} style={{ color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>
+              {usePasswordless ? "Use Password Instead" : "Sign in without password"}
+            </span>
           </div>
+
+          {!usePasswordless && (
+            <div style={{ textAlign: "center", marginTop: 12, fontSize: 13, color: "#94A3B8" }}>
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+              <span onClick={() => { setIsSignUp(!isSignUp); setError(""); }} style={{ color: "#2563EB", fontWeight: 600, cursor: "pointer" }}>{isSignUp ? "Sign In" : "Sign Up"}</span>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -140,7 +212,7 @@ function formatDate(d) { return new Date(d + "T00:00:00").toLocaleDateString("en
 function daysUntil(d) { const now = new Date(); now.setHours(0,0,0,0); return Math.ceil((new Date(d + "T00:00:00") - now) / 864e5); }
 function classifySchool(acc) { if (acc <= 10) return "Reach"; if (acc <= 30) return "Target"; return "Safety"; }
 
-function App({ user, supabase: sb }) {
+function App({ user, db, auth }) {
   const [schools, setSchools] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState("dashboard");
@@ -164,37 +236,41 @@ function App({ user, supabase: sb }) {
   const inputRef = useRef(null);
 
   
-  // ── Supabase Persistence ──
+  // ── Firebase Persistence ──
   const saveTimeout = useRef(null);
   const isLoadingData = useRef(false);
 
   // Load user data on mount
   useEffect(() => {
-    if (!sb || !user) return;
+    if (!db || !user) return;
     isLoadingData.current = true;
-    sb.from("user_data").select("*").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        if (data) {
+    db.collection("user_data").doc(user.uid).get()
+      .then((doc) => {
+        if (doc.exists) {
+          const data = doc.data();
           if (data.schools && data.schools.length) setSchools(data.schools);
           if (data.tasks && data.tasks.length) setTasks(data.tasks);
           if (data.saved_schools && data.saved_schools.length) setSavedSchools(data.saved_schools);
         }
         setTimeout(() => { isLoadingData.current = false; }, 500);
       })
-      .catch(() => { isLoadingData.current = false; });
-  }, []);
+      .catch((err) => { 
+        console.error("Error loading data:", err);
+        isLoadingData.current = false; 
+      });
+  }, [user.uid]);
 
   // Auto-save on changes (debounced 1s)
   useEffect(() => {
-    if (!sb || !user || isLoadingData.current) return;
+    if (!db || !user || isLoadingData.current) return;
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
-      sb.from("user_data").upsert({
-        user_id: user.id,
+      db.collection("user_data").doc(user.uid).set({
         schools: schools,
         tasks: tasks,
-        saved_schools: savedSchools
-      }, { onConflict: "user_id" });
+        saved_schools: savedSchools,
+        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
     }, 1000);
   }, [schools, tasks, savedSchools]);
 
@@ -281,7 +357,7 @@ function App({ user, supabase: sb }) {
                 <button key={id} className="nb" onClick={() => setView(id)} style={{ padding: "7px 13px", borderRadius: 8, fontSize: 13, fontWeight: view === id ? 600 : 400, color: view === id ? accent : slate, background: view === id ? "rgba(37,99,235,.08)" : "transparent" }}>{icon} {label}</button>
               ))}
             </div>
-            {sb && <button onClick={() => sb.auth.signOut()} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 13px", fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>Sign Out</button>}
+            {auth && <button onClick={() => auth.signOut()} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "7px 13px", fontSize: 12, color: "#94A3B8", cursor: "pointer" }}>Sign Out</button>}
             <button onClick={() => { setChatOpen(true); setTimeout(() => inputRef.current?.focus(), 300); }} style={{ background: accent, color: "#fff", border: "none", borderRadius: 8, padding: "7px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>💬 Coach</button>
           </div>
         </div>
@@ -541,21 +617,16 @@ function Root() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    if (!sbClient) { setChecking(false); return; }
-    sbClient.auth.getSession().then(function(r) {
-      if (r.data.session) setUser(r.data.session.user);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
       setChecking(false);
     });
-    var sub = sbClient.auth.onAuthStateChange(function(ev, session) {
-      setUser(session ? session.user : null);
-    });
-    return function() { sub.data.subscription.unsubscribe(); };
+    return () => unsubscribe();
   }, []);
 
-  if (!sbClient) return React.createElement(App, { user: null, supabase: null });
   if (checking) return React.createElement("div", { style: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8" } }, "Loading...");
   if (!user) return React.createElement(AuthScreen, { onAuth: setUser });
-  return React.createElement(App, { user: user, supabase: sbClient });
+  return React.createElement(App, { user: user, db: db, auth: auth });
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

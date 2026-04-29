@@ -5,26 +5,32 @@ College admissions planner with school discovery, deadline management, AI coachi
 ## Tech Stack
 - **Frontend:** React 18 (CDN, no build step)
 - **AI Coach:** Google Gemini 2.5 Flash Lite (free)
-- **Database:** Supabase (PostgreSQL + Auth)
+- **Database:** Firebase Firestore (NoSQL)
+- **Authentication:** Firebase Auth
 - **Hosting:** Vercel (serverless)
 
 ## Setup (10 minutes)
 
-### 1. Supabase (database + auth)
+### 1. Firebase (database + auth)
 
-1. Go to [supabase.com](https://supabase.com) → sign up (free) → **New Project**
-2. Pick a name and set a database password → **Create**
-3. Wait for it to spin up, then go to **SQL Editor** (left sidebar)
-4. Paste the contents of `supabase-schema.sql` and click **Run**
-5. Go to **Settings** → **API** and copy:
-   - **Project URL** (looks like `https://xxxxx.supabase.co`)
-   - **anon public key** (starts with `eyJ...`)
-6. Open `index.html` and replace the two placeholder values near the top:
+1. Go to the [Firebase Console](https://console.firebase.google.com/) → **Add project**
+2. Enable **Authentication** → **Get started** → Select **Email/Password** → Enable it
+3. Enable **Firestore Database** → **Create database** → Select **Start in test mode** (or production mode and apply rules)
+4. Go to **Project Settings** (gear icon) → **General**
+5. Scroll down to **Your apps** → Click the `</>` icon (Web) → Register app
+6. Copy the `firebaseConfig` object from the setup code
+7. Open `index.html` and replace the placeholder `firebaseConfig` near the top:
+   ```javascript
+   const firebaseConfig = {
+     apiKey: "YOUR_FIREBASE_API_KEY",
+     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+     projectId: "YOUR_PROJECT_ID",
+     storageBucket: "YOUR_PROJECT_ID.appspot.com",
+     messagingSenderId: "YOUR_SENDER_ID",
+     appId: "YOUR_APP_ID"
+   };
    ```
-   const SUPABASE_URL = "https://xxxxx.supabase.co";       // ← your URL
-   const SUPABASE_ANON_KEY = "eyJhbGci...your-key-here";   // ← your anon key
-   ```
-   These are PUBLIC keys — safe to commit. Row Level Security protects user data.
+8. (Optional) Apply security rules from `firebase-rules.json` in the Firestore **Rules** tab.
 
 ### 2. Gemini API key (free)
 
@@ -49,8 +55,8 @@ Your site will be live. Users sign up, their school lists and tasks persist acro
 admitplan/
 ├── api/
 │   └── chat.js              ← Serverless proxy for Gemini API
-├── index.html               ← Full frontend app with Supabase auth
-├── supabase-schema.sql      ← Run this in Supabase SQL Editor
+├── index.html               ← Full frontend app with Firebase auth & Firestore
+├── firebase-rules.json      ← Security rules for Firestore
 ├── vercel.json
 ├── package.json
 └── .gitignore
@@ -58,7 +64,7 @@ admitplan/
 
 ## How It Works
 
-- **Auth:** Supabase handles email/password signup and login. Session tokens are managed automatically.
-- **Data:** When users add schools, check off tasks, or bookmark schools, changes auto-save to Supabase (debounced 1s). Data loads automatically on login.
+- **Auth:** Firebase Auth handles email/password signup and login. Session state is managed automatically via `onAuthStateChanged`.
+- **Data:** When users add schools, check off tasks, or bookmark schools, changes auto-save to Firestore (debounced 1s). Data loads automatically on login.
 - **AI Coach:** Chat messages go to `/api/chat` → Vercel serverless function → Google Gemini API. The API key stays server-side.
-- **Security:** Row Level Security (RLS) on the database ensures users can only read/write their own data. The Supabase anon key is public by design.
+- **Security:** Firestore Security Rules ensure users can only read/write their own data based on their `uid`.
